@@ -1,6 +1,6 @@
 galaxy_info:
-  author: Luis Chamberlain
-  description: Update your ~/.ssh/config with vagrant's ssh info
+  author: Phillip W. Young
+  description: Test Ansible
   license: GPLv2
   min_ansible_version: 2.7
   platforms:
@@ -40,6 +40,6 @@ galaxy_info:
       - 12
       - 12SP1
       - 15
-  galaxy_tags: [ vagrant, ssh ]
+  galaxy_tags: [ ansible, test ]
 
 dependencies: []

@@ -6,4 +6,4 @@
 
 - hosts: all
   roles:
-    - role: test_ansible-role-sanity-check
+    - role: ansible-role-sanity-check
