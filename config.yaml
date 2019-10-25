@@ -1,0 +1,140 @@
+---
+################################################################################
+# GLOBAL BOX DEFINITIONS
+################################################################################
+# There is some support for static IPs.
+#   - On VirtualBox:
+#     - 'ip', if given,  will be the IP on an internal network
+#     - 'ip2', if given, will be the IP on an internal network
+#     - 'netmask', if given, will be applies to the networks with 'ip' and/or 'ip2'
+#   - On Libvirt, the values of 'ip', 'ip2', and 'netmask' (currently) don't currently matter.
+#     - 'ip2', if given, cause a second NIC to be created (on 'libvir1')
+#     - In future, we could automate management of QEMU networks (as we do with QEMU disks)
+#   - Example:
+#boxes:
+#  - name: node-1
+#    ip: 192.254.3.10
+#    netmask: 255.255.255.128
+#    ip2: 192.254.3.138
+boxes:
+  - name: test-sanity-check-node-1
+#  - name: test-sanity-check-node-2  
+
+################################################################################
+# PROVISIONER: VAGRANT
+################################################################################
+vagrant_global:
+  # Only create the first 'limit_num_boxes' boxes
+  #limit_boxes: "yes"
+  #limit_num_boxes: 1
+  memory: 4096
+  cpus: 4
+  boot_timeout: 300
+  # This ends up slightly different depending on the vagrant provider right now.
+  # For Virtualbox: /dev/nvme0n1, /dev/nvme0n2, etc.
+  # For libvirt:    /dev/nvme0n1, /dev/nvme1n1, etc.
+  # This is due to how Virtualbox only supports one nvme storage controller
+  nvme_disks:
+    data:
+      size: 102401
+    data2:
+      size: 102401
+  #
+  # You can use force_provider if your OS defaults differ from the default
+  # heuristics on Vagrantfile.
+  #force_provider: "libvirt"
+  #force_provider: "virtualbox"
+  #
+  virtualbox_cfg:
+    enabled: "true" # If not "true" then omit from Vagrantfile
+    # https://app.vagrantup.com/ubuntu/boxes/bionic64
+    box: "generic/ubuntu1804"
+    enable_sse4: "true"
+    # can be vdi, vmdk, vhd
+    nvme_disk_postfix: 'vdi'
+    # On the current directory
+    nvme_disk_path: '.vagrant/nvme_disks/' # Default to a path relative to the Vagrantfile (common for VirtualBox)
+    #nvme_disk_path: '/some-absolute-path/' # May be useful
+    #nvme_disk_path: '$HOME/.local/share/libvirt/images/' # Some other path in the user's home directory
+    nvme_disk_prefix: 'nvme_disk'
+    # To stress test a virtual nvme controller you could peg all disks onto
+    # one controller. We want to avoid this as our focus is testing filesystems
+    # and not storage controllers however Virtualbox currently only supports
+    # one nvme storage controller. Set this to true only if you are adding
+    # support for this upstream to Virtualbox.
+    nvme_controller_per_disk: false
+    # If true, then append to 'nvme_disk_path' the name of the project.
+    # The project name is taken from the parent directory of the directory holding the Vagrantfiile.
+    # So, if the Vagrantfile is in /a/b/c/PROJECT_NAME/foo/Vagrantfile then 'PROJECT_NAME' is used
+    append_project_name_to_nvme_disk_path: 'true'
+  libvirt_cfg:
+    enabled: "true" # If not "true" then omit from Vagrantfile
+    # Setup with: vagrant box add <BOX> --provider=libvirt
+    box: "generic/ubuntu1804"
+    machine_type: 'q35'
+    nvme_disk_postfix: 'qcow2'
+    nvme_disk_id_prefix: 'drv'
+    # Fedora uses qemu here by default. Override with the environment variable
+    # KDEVOPS_VAGRANT_QEMU_GROUP. If not sure edit /etc/libvirt/qemu.conf user
+    # and group settings. If using apparmor / selinux you may run into snags,
+    # but that is out of scope of this project.
+    qemu_group: 'qemu' # If this is uncommented, set the group on the storage files to this
+    # In case you use a development version of qemu
+    # emulator_path: '/usr/local/bin/qemu-system-x86_64'
+    emulator_path: '/usr/bin/qemu-system-x86_64'
+    # These are all valid
+    nvme_disk_path: '$HOME/.local/share/libvirt/images/' # Default to something that works for QEMU://session
+    #nvme_disk_path: '/var/lib/libvirt/images/' # Absolute path (for QEMU://sytem)
+    #nvme_disk_path: '.vagrant/nvme_disks/' # Relative to the Vagrantfile (requires setting perms)
+    #
+    # If true, then append to 'nvme_disk_path' the name of the project.
+    # The project name is taken from the parent directory of the directory holding the Vagrantfiile.
+    # So, if the Vagrantfile is in /a/b/c/PROJECT_NAME/foo/Vagrantfile then 'PROJECT_NAME' is used
+    append_project_name_to_nvme_disk_path: 'true'
+
+################################################################################
+# PROVISIONER: TERRAFORM (TODO)
+################################################################################
+
+################################################################################
+# CONFIGURATION: VIA ANSIBLE
+################################################################################
+ansible:
+  # These roles are added to build/requirements.yaml and are added
+  # locally via 'ansible-galaxy'.
+  roles:
+    - src: https://github.com/pwyoung/ansible-role-sanity-check
+      name: ansible-role-sanity-check
+      scm: git
+      version: 0.0.2
+  # 'playbooks' specifies a list of playbooks to fetch.
+  # Currently, only 'scm: git' is supported.
+  # Each playbook will be cloned into build/playbooks/<entry>
+  # A script, build/run-playbooks.sh will be created so that the playbooks
+  # can be run manually (e.g. during development of a local role)
+  # The order that the playbooks are listed below will be preserved
+  # in build/run-playbooks.sh.
+  playbooks:
+    - name: "ansible-playbook-sanity-check"
+      scm: git
+      entry: playbook.yaml # Defaults to site.yml      
+      #src: "https://github.com/pwyoung/ansible-playbook-sanity-check"
+      #version: master
+      src: "$BUILD_DIR/.." # For dev, point to this directory
+      version: "dev" # For dev, checkout the 'dev' branch
+  # Use this to create build/inventory.yml
+  inventory:
+    all:
+      vars:
+        ansible_python_interpreter: "/usr/bin/python3"
+      hosts:
+        test-sanity-check-node-1:
+      children:
+        group-a:
+          hosts:
+            test-sanity-check-node-1:
+  # Use this to create build/extra_vars.yaml
+  extra_vars:
+    test_msg: "TEST MESSAGE FROM EXTRA_VARS-dev"
+#    test_cmd: "ping -c 1 google.com"
+    
