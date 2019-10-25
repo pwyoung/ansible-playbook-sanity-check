@@ -118,9 +118,8 @@ ansible:
     - name: "ansible-playbook-sanity-check"
       scm: git
       entry: playbook.yaml # Defaults to site.yml      
-      #src: "https://github.com/pwyoung/ansible-playbook-sanity-check"
+      src: "https://github.com/pwyoung/ansible-playbook-sanity-check"
       #version: master
-      src: "$BUILD_DIR/.." # For dev, point to this directory
       version: "dev" # For dev, checkout the 'dev' branch
   # Use this to create build/inventory.yml
   inventory:
@@ -136,5 +135,3 @@ ansible:
   # Use this to create build/extra_vars.yaml
   extra_vars:
     test_msg: "TEST MESSAGE FROM EXTRA_VARS-dev"
-#    test_cmd: "ping -c 1 google.com"
-    
