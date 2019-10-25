@@ -119,8 +119,7 @@ ansible:
       scm: git
       entry: playbook.yaml # Defaults to site.yml      
       src: "https://github.com/pwyoung/ansible-playbook-sanity-check"
-      #version: master
-      version: "dev" # For dev, checkout the 'dev' branch
+      version: master
   # Use this to create build/inventory.yml
   inventory:
     all:
