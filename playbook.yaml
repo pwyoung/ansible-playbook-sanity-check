@@ -4,6 +4,14 @@
   tasks:
     - debug: msg="test_msg={{ test_msg }}"
 
+- name: Show ANSIBLE_DIR
+  hosts: all
+  tasks:
+    - debug: msg="ANSIBLE_DIR={{ ansible_directory }}"
+  vars:
+    ansible_directory: "{{ lookup('env','ANSIBLE_DIR') }}"
+    
+
 - hosts: all
   roles:
     - role: ansible-role-sanity-check
