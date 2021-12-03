@@ -3,4 +3,4 @@
 - src: https://github.com/pwyoung/ansible-role-sanity-check
   name: ansible-role-sanity-check
   scm: git
-  version: 0.0.2
+  version: 0.0.3
